@@ -1,0 +1,6 @@
+@TravelBookingApi_HostAddress = http://localhost:5225
+
+GET {{TravelBookingApi_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

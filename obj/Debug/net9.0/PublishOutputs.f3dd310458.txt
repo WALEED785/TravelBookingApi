@@ -1,0 +1,9 @@
+C:\Users\user\Desktop\chat-bot\TravelBookingApi\obj\Debug\net9.0\PubTmp\Out\TravelBookingApi.exe
+C:\Users\user\Desktop\chat-bot\TravelBookingApi\obj\Debug\net9.0\PubTmp\Out\appsettings.Development.json
+C:\Users\user\Desktop\chat-bot\TravelBookingApi\obj\Debug\net9.0\PubTmp\Out\appsettings.json
+C:\Users\user\Desktop\chat-bot\TravelBookingApi\obj\Debug\net9.0\PubTmp\Out\TravelBookingApi.dll
+C:\Users\user\Desktop\chat-bot\TravelBookingApi\obj\Debug\net9.0\PubTmp\Out\TravelBookingApi.deps.json
+C:\Users\user\Desktop\chat-bot\TravelBookingApi\obj\Debug\net9.0\PubTmp\Out\TravelBookingApi.runtimeconfig.json
+C:\Users\user\Desktop\chat-bot\TravelBookingApi\obj\Debug\net9.0\PubTmp\Out\TravelBookingApi.pdb
+C:\Users\user\Desktop\chat-bot\TravelBookingApi\obj\Debug\net9.0\PubTmp\Out\Microsoft.AspNetCore.OpenApi.dll
+C:\Users\user\Desktop\chat-bot\TravelBookingApi\obj\Debug\net9.0\PubTmp\Out\Microsoft.OpenApi.dll
