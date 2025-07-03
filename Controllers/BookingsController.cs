@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TravelBookingApi.Models.DTOs;
 using TravelBookingApi.Services.Interfaces;
@@ -6,7 +5,6 @@ using System.Threading.Tasks;
 
 namespace TravelBookingApi.Controllers
 {
-    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class BookingsController : ControllerBase
@@ -36,7 +34,7 @@ namespace TravelBookingApi.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Create(BookingDTO bookingDto)
+        public async Task<IActionResult> Create(BookingCreateDTO bookingDto)
         {
             var booking = await _bookingService.CreateBookingAsync(bookingDto);
             return CreatedAtAction(nameof(GetById),

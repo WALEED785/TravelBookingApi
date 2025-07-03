@@ -5,59 +5,51 @@ using TravelBookingApi.Repositories.Interfaces;
 
 namespace TravelBookingApi.Repositories.Implementations
 {
-    public class BookingRepository : IBookingRepository
+    public sealed class BookingRepository : IBookingRepository
     {
-        private readonly AppDbContext _context;
+        private readonly AppDbContext _ctx;
 
-        public BookingRepository(AppDbContext context)
+        public BookingRepository(AppDbContext ctx)
         {
-            _context = context;
+            _ctx = ctx;
         }
+
+        public async Task<IEnumerable<Booking>> GetAllBookingsAsync() =>
+            await _ctx.Bookings
+                      .Include(b => b.User)
+                      .Include(b => b.Hotel)
+                      .Include(b => b.Flight)
+                      .ToListAsync();
+
+        public async Task<Booking?> GetBookingByIdAsync(int id) =>
+            await _ctx.Bookings
+                      .Include(b => b.User)
+                      .Include(b => b.Hotel)
+                      .Include(b => b.Flight)
+                      .FirstOrDefaultAsync(b => b.BookingId == id);
+
+        public async Task<IEnumerable<Booking>> GetUserBookingsAsync(int userId) =>
+            await _ctx.Bookings
+                      .Where(b => b.UserId == userId)
+                      .Include(b => b.Hotel)
+                      .Include(b => b.Flight)
+                      .ToListAsync();
 
         public async Task<Booking> AddBookingAsync(Booking booking)
         {
-            _context.Bookings.Add(booking);
-            await _context.SaveChangesAsync();
-            return booking;
+            _ctx.Bookings.Add(booking);
+            await _ctx.SaveChangesAsync();
+            return booking;                         // DB now has BookingId
         }
 
         public async Task<bool> CancelBookingAsync(int id)
         {
-            var booking = await _context.Bookings.FindAsync(id);
-            if (booking == null)
-                return false;
+            var entity = await _ctx.Bookings.FindAsync(id);
+            if (entity is null) return false;
 
-            booking.Status = "Cancelled";
-            _context.Bookings.Update(booking);
-            await _context.SaveChangesAsync();
+            entity.Status = "Cancelled";
+            await _ctx.SaveChangesAsync();
             return true;
-        }
-
-        public async Task<IEnumerable<Booking>> GetAllBookingsAsync()
-        {
-            return await _context.Bookings
-                .Include(b => b.User)
-                .Include(b => b.Hotel)
-                .Include(b => b.Flight)
-                .ToListAsync();
-        }
-
-        public async Task<Booking> GetBookingByIdAsync(int id)
-        {
-            return await _context.Bookings
-                .Include(b => b.User)
-                .Include(b => b.Hotel)
-                .Include(b => b.Flight)
-                .FirstOrDefaultAsync(b => b.BookingId == id);
-        }
-
-        public async Task<IEnumerable<Booking>> GetUserBookingsAsync(int userId)
-        {
-            return await _context.Bookings
-                .Where(b => b.UserId == userId)
-                .Include(b => b.Hotel)
-                .Include(b => b.Flight)
-                .ToListAsync();
         }
     }
 }

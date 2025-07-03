@@ -9,31 +9,57 @@ using TravelBookingApi.Services.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container
+// ------------------------
+// 1) Controllers
+// ------------------------
 builder.Services.AddControllers();
 
-// Configure DbContext with SQL Server
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+// ------------------------
+// 2) EF Core / SQL Server
+// ------------------------
+builder.Services.AddDbContext<AppDbContext>(opts =>
+    opts.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// Add AutoMapper
-builder.Services.AddAutoMapper(typeof(Program));
+// ------------------------
+// 3) CORS (dev)
+// ------------------------
+builder.Services.AddCors(opts =>
+{
+    opts.AddPolicy("ReactAppPolicy", p =>
+    {
+        p.WithOrigins("http://localhost:3200")
+         .AllowAnyHeader()
+         .AllowAnyMethod()
+         .AllowCredentials();
+    });
+});
 
-// Register repositories
+// ------------------------
+// 4) AutoMapper – NEW
+// ------------------------
+// Scans *all* loaded assemblies, so you do NOT have to list Profiles one?by?one.
+builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+
+// ------------------------
+// 5) Repositories & Services
+// ------------------------
 builder.Services.AddScoped<IHotelRepository, HotelRepository>();
 builder.Services.AddScoped<IFlightRepository, FlightRepository>();
 builder.Services.AddScoped<IBookingRepository, BookingRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IDestinationRepository, DestinationRepository>();
 
-// Register services
 builder.Services.AddScoped<IHotelService, HotelService>();
 builder.Services.AddScoped<IFlightService, FlightService>();
-builder.Services.AddScoped<IBookingService, BookingService>();
+builder.Services.AddScoped<IBookingService, BookingService>();   // our hand?mapped service
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IDestinationService, DestinationService>();
 builder.Services.AddScoped<ITokenService, SimpleTokenService>();
 builder.Services.AddScoped<IRecommendationService, RecommendationService>();
 
-// Configure Swagger/OpenAPI
+// ------------------------
+// 6) Swagger
+// ------------------------
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
@@ -43,37 +69,13 @@ builder.Services.AddSwaggerGen(c =>
         Version = "v1",
         Description = "API for managing travel bookings, hotels, and flights"
     });
-
-    // Add Token Authentication to Swagger
-    var securityScheme = new OpenApiSecurityScheme
-    {
-        Name = "Authorization",
-        Description = "Enter your token",
-        In = ParameterLocation.Header,
-        Type = SecuritySchemeType.ApiKey,
-        Scheme = "Bearer"
-    };
-
-    c.AddSecurityDefinition("TokenAuth", securityScheme);
-    c.AddSecurityRequirement(new OpenApiSecurityRequirement
-    {
-        {
-            new OpenApiSecurityScheme
-            {
-                Reference = new OpenApiReference
-                {
-                    Type = ReferenceType.SecurityScheme,
-                    Id = "TokenAuth"
-                }
-            },
-            Array.Empty<string>()
-        }
-    });
 });
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline
+// ------------------------
+// 7) HTTP Pipeline
+// ------------------------
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -82,97 +84,58 @@ if (app.Environment.IsDevelopment())
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "Travel Booking API v1");
         c.DisplayRequestDuration();
     });
+
+    app.UseCors("ReactAppPolicy");
+}
+else
+{
+    app.UseCors(p => p
+        .WithOrigins("https://your-production-domain.com")
+        .AllowAnyHeader()
+        .AllowAnyMethod());
 }
 
-// Apply database migrations
+// ---------- DB migrations ----------
 using (var scope = app.Services.CreateScope())
 {
-    var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-
-    // Check if there are pending migrations
-    if ((await dbContext.Database.GetPendingMigrationsAsync()).Any())
-    {
-        // Apply migrations if there are any pending
-        await dbContext.Database.MigrateAsync();
-    }
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    if ((await db.Database.GetPendingMigrationsAsync()).Any())
+        await db.Database.MigrateAsync();
 }
 
 app.UseHttpsRedirection();
-
-// Custom token-based authentication middleware
-app.Use(async (context, next) =>
-{
-    var path = context.Request.Path;
-    if (!path.StartsWithSegments("/api/user/login") &&
-        !path.StartsWithSegments("/api/user/register") &&
-        !path.StartsWithSegments("/swagger") &&
-        !path.StartsWithSegments("/health"))
-    {
-        if (!context.Request.Headers.TryGetValue("Authorization", out var authHeader))
-        {
-            context.Response.StatusCode = 401;
-            await context.Response.WriteAsync("Authorization token is required");
-            return;
-        }
-
-        var token = authHeader.ToString().Replace("Bearer ", "");
-        var tokenService = context.RequestServices.GetRequiredService<ITokenService>();
-        var userRepo = context.RequestServices.GetRequiredService<IUserRepository>();
-
-        var user = await userRepo.GetByTokenAsync(token);
-        if (user == null || user.TokenExpiry < DateTime.UtcNow)
-        {
-            context.Response.StatusCode = 401;
-            await context.Response.WriteAsync("Invalid or expired token");
-            return;
-        }
-
-        // Store user in context for later use if needed
-        context.Items["User"] = user;
-    }
-
-    await next();
-});
-
 app.UseRouting();
 
-// Enable CORS if needed
-app.UseCors(x => x
-    .AllowAnyOrigin()
-    .AllowAnyMethod()
-    .AllowAnyHeader());
-// Add this before app.MapControllers()
-app.UseExceptionHandler(exceptionHandlerApp =>
+// ---------- Global error handler ----------
+app.UseExceptionHandler(handler =>
 {
-    exceptionHandlerApp.Run(async context =>
+    handler.Run(async ctx =>
     {
-        context.Response.StatusCode = StatusCodes.Status500InternalServerError;
-        context.Response.ContentType = "application/json";
+        ctx.Response.StatusCode = StatusCodes.Status500InternalServerError;
+        ctx.Response.ContentType = "application/json";
 
-        var error = context.Features.Get<IExceptionHandlerFeature>();
-        if (error != null)
+        var ex = ctx.Features.Get<IExceptionHandlerFeature>()?.Error;
+        if (ex is null) return;
+
+        var code = ex switch
         {
-            var ex = error.Error;
-            var statusCode = ex switch
-            {
-                UnauthorizedAccessException => StatusCodes.Status401Unauthorized,
-                ArgumentException => StatusCodes.Status400BadRequest,
-                _ => StatusCodes.Status500InternalServerError
-            };
+            UnauthorizedAccessException => StatusCodes.Status401Unauthorized,
+            ArgumentException => StatusCodes.Status400BadRequest,
+            _ => StatusCodes.Status500InternalServerError
+        };
 
-            context.Response.StatusCode = statusCode;
-            await context.Response.WriteAsJsonAsync(new
-            {
-                StatusCode = statusCode,
-                Message = ex.Message
-            });
-        }
+        ctx.Response.StatusCode = code;
+        await ctx.Response.WriteAsJsonAsync(new
+        {
+            StatusCode = code,
+            Message = ex.Message,
+            Details = app.Environment.IsDevelopment() ? ex.StackTrace : null
+        });
     });
 });
 
+// ---------- Endpoints ----------
 app.MapControllers();
-
-// Health check endpoint
 app.MapGet("/health", () => Results.Ok(new { Status = "Healthy" }));
 
 app.Run();

@@ -4,7 +4,6 @@ using TravelBookingApi.Services.Interfaces;
 
 namespace TravelBookingApi.Controllers
 {
-    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class RecommendationsController : ControllerBase

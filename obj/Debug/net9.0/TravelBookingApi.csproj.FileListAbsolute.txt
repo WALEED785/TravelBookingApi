@@ -202,3 +202,5 @@ C:\Users\user\Desktop\Traveling-Booking\TravelBookingApi\obj\Debug\net9.0\refint
 C:\Users\user\Desktop\Traveling-Booking\TravelBookingApi\obj\Debug\net9.0\TravelBookingApi.pdb
 C:\Users\user\Desktop\Traveling-Booking\TravelBookingApi\obj\Debug\net9.0\TravelBookingApi.genruntimeconfig.cache
 C:\Users\user\Desktop\Traveling-Booking\TravelBookingApi\obj\Debug\net9.0\ref\TravelBookingApi.dll
+C:\Users\user\Desktop\Traveling-Booking\TravelBookingApi\obj\Debug\net9.0\TravelBookingApi.sourcelink.json
+C:\Users\user\Desktop\Traveling-Booking\TravelBookingApi\obj\Debug\net9.0\staticwebassets.upToDateCheck.txt

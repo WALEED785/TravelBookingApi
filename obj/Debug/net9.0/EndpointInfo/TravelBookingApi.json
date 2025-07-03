@@ -25,17 +25,17 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/BookingDTO"
+                "$ref": "#/components/schemas/BookingCreateDTO"
               }
             },
             "text/json": {
               "schema": {
-                "$ref": "#/components/schemas/BookingDTO"
+                "$ref": "#/components/schemas/BookingCreateDTO"
               }
             },
             "application/*+json": {
               "schema": {
-                "$ref": "#/components/schemas/BookingDTO"
+                "$ref": "#/components/schemas/BookingCreateDTO"
               }
             }
           }
@@ -116,6 +116,131 @@
         }
       }
     },
+    "/api/Destinations": {
+      "get": {
+        "tags": [
+          "Destinations"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Destinations"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DestinationCreateDTO"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DestinationCreateDTO"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/DestinationCreateDTO"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/Destinations/{id}": {
+      "get": {
+        "tags": [
+          "Destinations"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Destinations"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DestinationCreateDTO"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DestinationCreateDTO"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/DestinationCreateDTO"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Destinations"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
     "/api/Flights": {
       "get": {
         "tags": [
@@ -135,17 +260,17 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/FlightDTO"
+                "$ref": "#/components/schemas/FlightCreateDTO"
               }
             },
             "text/json": {
               "schema": {
-                "$ref": "#/components/schemas/FlightDTO"
+                "$ref": "#/components/schemas/FlightCreateDTO"
               }
             },
             "application/*+json": {
               "schema": {
-                "$ref": "#/components/schemas/FlightDTO"
+                "$ref": "#/components/schemas/FlightCreateDTO"
               }
             }
           }
@@ -279,6 +404,29 @@
         }
       }
     },
+    "/api/Flights/destination/{destinationId}": {
+      "get": {
+        "tags": [
+          "Flights"
+        ],
+        "parameters": [
+          {
+            "name": "destinationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
     "/api/Hotels": {
       "get": {
         "tags": [
@@ -298,17 +446,17 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/HotelDTO"
+                "$ref": "#/components/schemas/HotelCreateDTO"
               }
             },
             "text/json": {
               "schema": {
-                "$ref": "#/components/schemas/HotelDTO"
+                "$ref": "#/components/schemas/HotelCreateDTO"
               }
             },
             "application/*+json": {
               "schema": {
-                "$ref": "#/components/schemas/HotelDTO"
+                "$ref": "#/components/schemas/HotelCreateDTO"
               }
             }
           }
@@ -361,17 +509,17 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/HotelDTO"
+                "$ref": "#/components/schemas/HotelCreateDTO"
               }
             },
             "text/json": {
               "schema": {
-                "$ref": "#/components/schemas/HotelDTO"
+                "$ref": "#/components/schemas/HotelCreateDTO"
               }
             },
             "application/*+json": {
               "schema": {
-                "$ref": "#/components/schemas/HotelDTO"
+                "$ref": "#/components/schemas/HotelCreateDTO"
               }
             }
           }
@@ -646,13 +794,9 @@
   },
   "components": {
     "schemas": {
-      "BookingDTO": {
+      "BookingCreateDTO": {
         "type": "object",
         "properties": {
-          "bookingId": {
-            "type": "integer",
-            "format": "int32"
-          },
           "userId": {
             "type": "integer",
             "format": "int32"
@@ -678,13 +822,27 @@
         },
         "additionalProperties": false
       },
-      "FlightDTO": {
+      "DestinationCreateDTO": {
         "type": "object",
         "properties": {
-          "flightId": {
-            "type": "integer",
-            "format": "int32"
+          "name": {
+            "type": "string",
+            "nullable": true
           },
+          "country": {
+            "type": "string",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "FlightCreateDTO": {
+        "type": "object",
+        "properties": {
           "airline": {
             "type": "string",
             "nullable": true
@@ -712,13 +870,51 @@
         },
         "additionalProperties": false
       },
-      "HotelDTO": {
+      "FlightDTO": {
         "type": "object",
         "properties": {
-          "hotelId": {
+          "flightId": {
             "type": "integer",
             "format": "int32"
           },
+          "airline": {
+            "type": "string",
+            "nullable": true
+          },
+          "departureDestinationId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "arrivalDestinationId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "departureDestination": {
+            "type": "string",
+            "nullable": true
+          },
+          "arrivalDestination": {
+            "type": "string",
+            "nullable": true
+          },
+          "departureTime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "arrivalTime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "price": {
+            "type": "number",
+            "format": "double"
+          }
+        },
+        "additionalProperties": false
+      },
+      "HotelCreateDTO": {
+        "type": "object",
+        "properties": {
           "name": {
             "type": "string",
             "nullable": true
@@ -811,19 +1007,6 @@
         },
         "additionalProperties": false
       }
-    },
-    "securitySchemes": {
-      "TokenAuth": {
-        "type": "apiKey",
-        "description": "Enter your token",
-        "name": "Authorization",
-        "in": "header"
-      }
     }
-  },
-  "security": [
-    {
-      "TokenAuth": [ ]
-    }
-  ]
+  }
 }
