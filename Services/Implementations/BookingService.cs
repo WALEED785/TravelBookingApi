@@ -66,6 +66,8 @@ namespace TravelBookingApi.Services.Implementations
             UserId = b.UserId,
             HotelId = b.HotelId,
             FlightId = b.FlightId,
+            HotelName = b.Hotel?.Name,
+            FlightName = b.Flight?.Airline,
             TotalPrice = b.TotalPrice,
             Status = b.Status
         };

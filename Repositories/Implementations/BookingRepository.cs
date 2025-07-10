@@ -37,9 +37,16 @@ namespace TravelBookingApi.Repositories.Implementations
 
         public async Task<Booking> AddBookingAsync(Booking booking)
         {
-            _ctx.Bookings.Add(booking);
-            await _ctx.SaveChangesAsync();
-            return booking;                         // DB now has BookingId
+            try
+            {
+                _ctx.Bookings.Add(booking);
+                await _ctx.SaveChangesAsync();
+                return booking;
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }                         // DB now has BookingId
         }
 
         public async Task<bool> CancelBookingAsync(int id)

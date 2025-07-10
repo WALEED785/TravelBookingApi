@@ -7,6 +7,8 @@ namespace TravelBookingApi.Models.DTOs
         public int UserId { get; set; }
         public int? HotelId { get; set; }
         public int? FlightId { get; set; }
+        public string? HotelName { get; set; }
+        public string? FlightName { get; set; }
         public decimal TotalPrice { get; set; }
         public string? Status { get; set; }
     }

@@ -90,6 +90,7 @@ namespace TravelBookingApi.Services.Implementations
 
             return new LoginResponseDTO
             {
+                UserId = user.UserId,
                 Token = user.AuthToken,
                 Role = user.Role,
                 Username = user.Username,
