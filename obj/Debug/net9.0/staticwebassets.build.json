@@ -1,12 +1,1 @@
-{
-  "Version": 1,
-  "Hash": "6LNzgAIfSo8Qo9dQhx/ccE8FCLlReI/bKgKRqCX32FA=",
-  "Source": "TravelBookingApi",
-  "BasePath": "_content/TravelBookingApi",
-  "Mode": "Default",
-  "ManifestType": "Build",
-  "ReferencedProjectsConfiguration": [],
-  "DiscoveryPatterns": [],
-  "Assets": [],
-  "Endpoints": []
-}
+{"Version":1,"Hash":"6LNzgAIfSo8Qo9dQhx/ccE8FCLlReI/bKgKRqCX32FA=","Source":"TravelBookingApi","BasePath":"_content/TravelBookingApi","Mode":"Default","ManifestType":"Build","ReferencedProjectsConfiguration":[],"DiscoveryPatterns":[],"Assets":[],"Endpoints":[]}

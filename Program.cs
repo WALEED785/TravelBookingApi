@@ -1,11 +1,14 @@
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
+using Nest;
 using TravelBookingApi.Data;
 using TravelBookingApi.Repositories.Implementations;
 using TravelBookingApi.Repositories.Interfaces;
+using TravelBookingApi.Services.AISearch;
 using TravelBookingApi.Services.Implementations;
 using TravelBookingApi.Services.Interfaces;
+using TravelBookingApi.Utilities;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -27,7 +30,10 @@ builder.Services.AddCors(opts =>
 {
     opts.AddPolicy("ReactAppPolicy", p =>
     {
-        p.WithOrigins("http://localhost:3200")
+        p.WithOrigins(
+            "http://localhost:3200",
+            "http://localhost:3000" 
+        )
          .AllowAnyHeader()
          .AllowAnyMethod()
          .AllowCredentials();
@@ -56,6 +62,26 @@ builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IDestinationService, DestinationService>();
 builder.Services.AddScoped<ITokenService, SimpleTokenService>();
 builder.Services.AddScoped<IRecommendationService, RecommendationService>();
+
+// ------------------------
+// 5.5) Elasticsearch Configuration
+// ------------------------
+
+// Configure Elasticsearch client
+var elasticSettings = new ConnectionSettings(new Uri(builder.Configuration["Elasticsearch:Url"]))
+    .DefaultIndex("travel_bookings")
+    .EnableDebugMode()
+    .PrettyJson()
+    .RequestTimeout(TimeSpan.FromMinutes(2));
+
+// Add as singleton since ElasticClient is thread-safe
+//builder.Services.AddSingleton<IElasticClient>(new ElasticClient(elasticSettings));
+
+// Register Elasticsearch service
+//builder.Services.AddScoped<IElasticsearchService, ElasticsearchService>();
+
+// Register the initializer as a hosted service
+//builder.Services.AddHostedService<ElasticsearchInitializerService>();
 
 // ------------------------
 // 6) Swagger

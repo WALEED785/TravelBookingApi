@@ -1,0 +1,74 @@
+version: '3.8'
+
+services:
+  travelbookingapi:
+    container_name: travelbookingapi
+    image: ${DOCKER_REGISTRY-}travelbookingapi
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "5000:80"
+      - "5001:443"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Server=db;Database=TravelBookingDB;User=sa;Password=YourStrong@Passw0rd;
+      - Elasticsearch__Url=http://elasticsearch:9200
+    depends_on:
+      - db
+      - elasticsearch
+    networks:
+      - elastic
+      - sqlserver
+
+  db:
+    container_name: sqlserver
+    image: mcr.microsoft.com/mssql/server:2019-latest
+    environment:
+      - SA_PASSWORD=YourStrong@Passw0rd
+      - ACCEPT_EULA=Y
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver-data:/var/opt/mssql
+    networks:
+      - sqlserver
+
+  elasticsearch:
+    container_name: elasticsearch
+    image: elasticsearch:7.10.1
+    environment:
+      - xpack.security.enabled=false
+      - discovery.type=single-node
+      - ES_JAVA_OPTS=-Xms1g -Xmx1g
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+    networks:
+      - elastic
+
+  kibana:
+    container_name: kibana
+    image: kibana:7.10.1
+    ports:
+      - "5601:5601"
+    depends_on:
+      - elasticsearch
+    environment:
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+    networks:
+      - elastic
+
+networks:
+  elastic:
+    driver: bridge
+  sqlserver:
+    driver: bridge
+
+volumes:
+  elasticsearch-data:
+    driver: local
+  sqlserver-data:
+    driver: local
