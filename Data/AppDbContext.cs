@@ -14,7 +14,6 @@ namespace TravelBookingApi.Data
         public DbSet<Flight> Flights { get; set; }
         public DbSet<Booking> Bookings { get; set; }
         public DbSet<Destination> Destinations { get; set; }
-        public DbSet<UserPreference> UserPreferences { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -41,10 +40,6 @@ namespace TravelBookingApi.Data
                 .WithMany(u => u.Bookings)
                 .HasForeignKey(b => b.UserId);
 
-            modelBuilder.Entity<UserPreference>()
-                .HasOne(up => up.User)
-                .WithOne(u => u.UserPreference)
-                .HasForeignKey<UserPreference>(up => up.UserId);
         }
     }
 }

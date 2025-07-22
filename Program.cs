@@ -32,7 +32,7 @@ builder.Services.AddCors(opts =>
     {
         p.WithOrigins(
             "http://localhost:3200",
-            "http://localhost:3000" 
+            "http://localhost:3000"
         )
          .AllowAnyHeader()
          .AllowAnyMethod()
@@ -41,9 +41,8 @@ builder.Services.AddCors(opts =>
 });
 
 // ------------------------
-// 4) AutoMapper – NEW
+// 4) AutoMapper
 // ------------------------
-// Scans *all* loaded assemblies, so you do NOT have to list Profiles one?by?one.
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
 // ------------------------
@@ -57,34 +56,40 @@ builder.Services.AddScoped<IDestinationRepository, DestinationRepository>();
 
 builder.Services.AddScoped<IHotelService, HotelService>();
 builder.Services.AddScoped<IFlightService, FlightService>();
-builder.Services.AddScoped<IBookingService, BookingService>();   // our hand?mapped service
+builder.Services.AddScoped<IBookingService, BookingService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IDestinationService, DestinationService>();
 builder.Services.AddScoped<ITokenService, SimpleTokenService>();
 builder.Services.AddScoped<IRecommendationService, RecommendationService>();
 
 // ------------------------
-// 5.5) Elasticsearch Configuration
+// 6) Elasticsearch Configuration
 // ------------------------
+var elasticsearchUrl = builder.Configuration["Elasticsearch:Url"] ?? "http://localhost:9200";
+var defaultIndex = builder.Configuration["Elasticsearch:DefaultIndex"] ?? "travel_bookings";
+var enableDebugMode = builder.Configuration.GetValue<bool>("Elasticsearch:EnableDebugMode", true);
+var requestTimeoutMinutes = builder.Configuration.GetValue<int>("Elasticsearch:RequestTimeoutMinutes", 2);
 
-// Configure Elasticsearch client
-var elasticSettings = new ConnectionSettings(new Uri(builder.Configuration["Elasticsearch:Url"]))
-    .DefaultIndex("travel_bookings")
-    .EnableDebugMode()
-    .PrettyJson()
-    .RequestTimeout(TimeSpan.FromMinutes(2));
+var elasticSettings = new ConnectionSettings(new Uri(elasticsearchUrl))
+    .DefaultIndex(defaultIndex)
+    .RequestTimeout(TimeSpan.FromMinutes(requestTimeoutMinutes));
+
+if (enableDebugMode)
+{
+    elasticSettings.EnableDebugMode().PrettyJson();
+}
 
 // Add as singleton since ElasticClient is thread-safe
-//builder.Services.AddSingleton<IElasticClient>(new ElasticClient(elasticSettings));
+builder.Services.AddSingleton<IElasticClient>(new ElasticClient(elasticSettings));
 
-// Register Elasticsearch service
-//builder.Services.AddScoped<IElasticsearchService, ElasticsearchService>();
+// Register Elasticsearch service as scoped (better for controllers)
+builder.Services.AddSingleton<IElasticsearchService, ElasticsearchService>();
 
 // Register the initializer as a hosted service
-//builder.Services.AddHostedService<ElasticsearchInitializerService>();
+builder.Services.AddHostedService<ElasticsearchInitializerService>();
 
 // ------------------------
-// 6) Swagger
+// 7) Swagger
 // ------------------------
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
@@ -93,14 +98,22 @@ builder.Services.AddSwaggerGen(c =>
     {
         Title = "Travel Booking API",
         Version = "v1",
-        Description = "API for managing travel bookings, hotels, and flights"
+        Description = "API for managing travel bookings, hotels, and flights with Elasticsearch integration"
     });
+
+    // Add XML comments if you have them
+    var xmlFile = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+    if (File.Exists(xmlPath))
+    {
+        c.IncludeXmlComments(xmlPath);
+    }
 });
 
 var app = builder.Build();
 
 // ------------------------
-// 7) HTTP Pipeline
+// 8) HTTP Pipeline
 // ------------------------
 if (app.Environment.IsDevelopment())
 {
@@ -109,6 +122,7 @@ if (app.Environment.IsDevelopment())
     {
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "Travel Booking API v1");
         c.DisplayRequestDuration();
+        c.EnableTryItOutByDefault();
     });
 
     app.UseCors("ReactAppPolicy");
@@ -162,6 +176,30 @@ app.UseExceptionHandler(handler =>
 
 // ---------- Endpoints ----------
 app.MapControllers();
-app.MapGet("/health", () => Results.Ok(new { Status = "Healthy" }));
+app.MapGet("/health", () => Results.Ok(new { Status = "Healthy", Timestamp = DateTime.UtcNow }));
+
+// ---------- Elasticsearch health check ----------
+app.MapGet("/health/elasticsearch", async (IElasticClient elasticClient) =>
+{
+    try
+    {
+        var response = await elasticClient.PingAsync();
+        return Results.Ok(new
+        {
+            Status = response.IsValid ? "Healthy" : "Unhealthy",
+            Timestamp = DateTime.UtcNow,
+            ElasticsearchUrl = elasticsearchUrl
+        });
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem(new()
+        {
+            Title = "Elasticsearch Health Check Failed",
+            Detail = ex.Message,
+            Status = 503
+        });
+    }
+});
 
 app.Run();

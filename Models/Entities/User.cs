@@ -32,7 +32,14 @@ namespace TravelBookingApi.Models.Entities
         // Navigation properties
         [JsonIgnore]
         public ICollection<Booking>? Bookings { get; set; }
-        [JsonIgnore]
-        public UserPreference UserPreference { get; set; }
+        [NotMapped]
+        public List<string>? FavoriteDestinationIds { get; set; } // e.g., ["destination_12", "destination_45"]
+
+        [NotMapped]
+        public List<string>? SavedFlightIds { get; set; }
+
+        [NotMapped]
+        public List<string>? SavedHotelIds { get; set; }
+
     }
 }

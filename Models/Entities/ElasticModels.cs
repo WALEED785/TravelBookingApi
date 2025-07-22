@@ -1,14 +1,14 @@
 ﻿using Nest;
 using System;
 
-namespace TravelBookingApi.Models.Elasticsearch
+namespace TravelBookingApi.Models.Entities
 {
     // Destination Index
     [ElasticsearchType(IdProperty = nameof(Id))]
     public class ElasticDestination
     {
         [Keyword]
-        public string? Id { get; set; } // Will store as "destination_{DestinationId}"
+        public string? Id { get; set; } // "destination_{DestinationId}"
 
         [Number(Name = "destination_id")]
         public int DestinationId { get; set; }
@@ -23,10 +23,7 @@ namespace TravelBookingApi.Models.Elasticsearch
         public string? Description { get; set; }
 
         [Keyword]
-        public string?[] PopularKeywords { get; set; }
-
-        [GeoPoint]
-        public GeoLocation Location { get; set; }
+        public string?[] PopularKeywords { get; set; } = [];
 
         [Number(NumberType.Double)]
         public decimal AverageHotelPrice { get; set; }
@@ -35,7 +32,7 @@ namespace TravelBookingApi.Models.Elasticsearch
         public int PopularityScore { get; set; }
 
         [Keyword]
-        public string?[] Tags { get; set; }
+        public string?[] Tags { get; set; } = [];
     }
 
     // Flight Index
@@ -52,10 +49,10 @@ namespace TravelBookingApi.Models.Elasticsearch
         public string? Airline { get; set; }
 
         [Keyword]
-        public string? DepartureDestination { get; set; }
+        public string? DepartureDestination { get; set; } // Use DepartureDestination.Name
 
         [Keyword]
-        public string? ArrivalDestination { get; set; }
+        public string? ArrivalDestination { get; set; } // Use ArrivalDestination.Name
 
         [Date]
         public DateTime DepartureTime { get; set; }
@@ -67,58 +64,37 @@ namespace TravelBookingApi.Models.Elasticsearch
         public decimal Price { get; set; }
 
         [Number(NumberType.Integer)]
-        public int DurationMinutes { get; set; }
-
+        public int DurationMinutes { get; set; } // Derived from time difference
         [Keyword]
-        public string? FlightClass { get; set; }
-
+        public string? FlightClass { get; set; } // optional if applicable
         [Boolean]
         public bool HasStopovers { get; set; }
-
         [Keyword]
-        public string?[] Amenities { get; set; }
+        public string?[] Amenities { get; set; } = []; // if flight amenities exist
     }
 
-    // Hotel Index
+
     [ElasticsearchType(IdProperty = nameof(Id))]
     public class ElasticHotel
     {
         [Keyword]
         public string? Id { get; set; } // "hotel_{HotelId}"
-
         [Number(Name = "hotel_id")]
         public int HotelId { get; set; }
-
         [Text(Name = "name", Analyzer = "autocomplete")]
         public string? Name { get; set; }
-
         [Keyword]
-        public string? Destination { get; set; }
-
+        public string? Destination { get; set; } // Destination.Name
         [Number(NumberType.Double)]
         public decimal PricePerNight { get; set; }
-
         [Number(NumberType.Double)]
         public decimal? Rating { get; set; }
-
         [Keyword]
-        public string?[] Amenities { get; set; }
-
-        [Keyword]
-        public string?[] RoomTypes { get; set; }
-
-        [GeoPoint]
-        public GeoLocation Location { get; set; }
-
-        [Keyword]
-        public string?[] NearbyAttractions { get; set; }
-
-        [Keyword]
-        public string?[] ImageUrls { get; set; }
-
+        public string?[] Amenities { get; set; } = [];
         [Text]
         public string? Description { get; set; }
     }
+
 
     // Search DTOs
     public class SearchRequestDto

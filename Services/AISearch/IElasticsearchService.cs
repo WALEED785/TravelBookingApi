@@ -1,4 +1,4 @@
-using TravelBookingApi.Models.Elasticsearch;
+using TravelBookingApi.Models.Entities;
 
 namespace TravelBookingApi.Services.AISearch;
 

@@ -4,7 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using TravelBookingApi.Models.Elasticsearch;
+using TravelBookingApi.Models.Entities;
 
 namespace TravelBookingApi.Services.AISearch
 {
@@ -23,9 +23,31 @@ namespace TravelBookingApi.Services.AISearch
         {
             try
             {
+                // Check if Elasticsearch is available
+                var pingResponse = await _elasticClient.PingAsync();
+                if (!pingResponse.IsValid)
+                {
+                    _logger.LogError("Elasticsearch is not available: {Error}", pingResponse.DebugInformation);
+                    return false;
+                }
+
+                // Check if indices already exist and delete them (for testing)
+                var existingIndices = new[] { "destinations", "flights", "hotels" };
+                foreach (var index in existingIndices)
+                {
+                    var existsResponse = await _elasticClient.Indices.ExistsAsync(index);
+                    if (existsResponse.Exists)
+                    {
+                        _logger.LogInformation("Deleting existing index: {Index}", index);
+                        await _elasticClient.Indices.DeleteAsync(index);
+                    }
+                }
+
                 // Create destination index
                 var destinationIndexResponse = await _elasticClient.Indices.CreateAsync("destinations", c => c
                     .Settings(s => s
+                        .NumberOfShards(1)
+                        .NumberOfReplicas(0)
                         .Analysis(a => a
                             .Analyzers(an => an
                                 .Custom("autocomplete", ca => ca
@@ -49,18 +71,69 @@ namespace TravelBookingApi.Services.AISearch
                                 .Analyzer("autocomplete")
                                 .SearchAnalyzer("standard")
                             )
+                            .Text(t => t
+                                .Name(n => n.Country)
+                                .Analyzer("standard")
+                            )
+                            .Text(t => t
+                                .Name(n => n.Description)
+                                .Analyzer("standard")
+                            )
+                            .Keyword(k => k
+                                .Name(n => n.Tags)
+                            )
                         )
                     )
                 );
 
+                if (!destinationIndexResponse.IsValid)
+                {
+                    _logger.LogError("Failed to create destinations index: {Error}", destinationIndexResponse.DebugInformation);
+                    return false;
+                }
+
                 // Create flights index
                 var flightIndexResponse = await _elasticClient.Indices.CreateAsync("flights", c => c
-                    .Map<ElasticFlight>(m => m.AutoMap())
+                    .Settings(s => s
+                        .NumberOfShards(1)
+                        .NumberOfReplicas(0)
+                    )
+                    .Map<ElasticFlight>(m => m
+                        .AutoMap()
+                        .Properties(p => p
+                            .Text(t => t
+                                .Name(n => n.Airline)
+                                .Analyzer("standard")
+                            )
+                            .Text(t => t
+                                .Name(n => n.DepartureDestination)
+                                .Analyzer("standard")
+                            )
+                            .Text(t => t
+                                .Name(n => n.ArrivalDestination)
+                                .Analyzer("standard")
+                            )
+                            .Date(d => d
+                                .Name(n => n.DepartureTime)
+                            )
+                            .Date(d => d
+                                .Name(n => n.ArrivalTime)
+                            )
+                        )
+                    )
                 );
+
+                if (!flightIndexResponse.IsValid)
+                {
+                    _logger.LogError("Failed to create flights index: {Error}", flightIndexResponse.DebugInformation);
+                    return false;
+                }
 
                 // Create hotels index
                 var hotelIndexResponse = await _elasticClient.Indices.CreateAsync("hotels", c => c
                     .Settings(s => s
+                        .NumberOfShards(1)
+                        .NumberOfReplicas(0)
                         .Analysis(a => a
                             .Analyzers(an => an
                                 .Custom("autocomplete", ca => ca
@@ -84,11 +157,29 @@ namespace TravelBookingApi.Services.AISearch
                                 .Analyzer("autocomplete")
                                 .SearchAnalyzer("standard")
                             )
+                            .Text(t => t
+                                .Name(n => n.Destination)
+                                .Analyzer("standard")
+                            )
+                            .Text(t => t
+                                .Name(n => n.Description)
+                                .Analyzer("standard")
+                            )
+                            .Keyword(k => k
+                                .Name(n => n.Amenities)
+                            )
                         )
                     )
                 );
 
-                return destinationIndexResponse.IsValid && flightIndexResponse.IsValid && hotelIndexResponse.IsValid;
+                if (!hotelIndexResponse.IsValid)
+                {
+                    _logger.LogError("Failed to create hotels index: {Error}", hotelIndexResponse.DebugInformation);
+                    return false;
+                }
+
+                _logger.LogInformation("All Elasticsearch indices created successfully");
+                return true;
             }
             catch (Exception ex)
             {
