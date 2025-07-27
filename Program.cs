@@ -8,7 +8,6 @@ using TravelBookingApi.Repositories.Interfaces;
 using TravelBookingApi.Services.AISearch;
 using TravelBookingApi.Services.Implementations;
 using TravelBookingApi.Services.Interfaces;
-using TravelBookingApi.Utilities;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -41,7 +40,7 @@ builder.Services.AddCors(opts =>
 });
 
 // ------------------------
-// 4) AutoMapper
+// 4) AutoMapper (if needed)
 // ------------------------
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
@@ -63,30 +62,21 @@ builder.Services.AddScoped<ITokenService, SimpleTokenService>();
 builder.Services.AddScoped<IRecommendationService, RecommendationService>();
 
 // ------------------------
-// 6) Elasticsearch Configuration
+// 6) Elasticsearch Configuration (Simplified)
 // ------------------------
 var elasticsearchUrl = builder.Configuration["Elasticsearch:Url"] ?? "http://localhost:9200";
-var defaultIndex = builder.Configuration["Elasticsearch:DefaultIndex"] ?? "travel_bookings";
-var enableDebugMode = builder.Configuration.GetValue<bool>("Elasticsearch:EnableDebugMode", true);
 var requestTimeoutMinutes = builder.Configuration.GetValue<int>("Elasticsearch:RequestTimeoutMinutes", 2);
 
+// Create Elasticsearch client with simple configuration
 var elasticSettings = new ConnectionSettings(new Uri(elasticsearchUrl))
-    .DefaultIndex(defaultIndex)
-    .RequestTimeout(TimeSpan.FromMinutes(requestTimeoutMinutes));
+    .RequestTimeout(TimeSpan.FromMinutes(requestTimeoutMinutes))
+    .ThrowExceptions(); // This will help with debugging
 
-if (enableDebugMode)
-{
-    elasticSettings.EnableDebugMode().PrettyJson();
-}
-
-// Add as singleton since ElasticClient is thread-safe
+// Add Elasticsearch client as singleton (thread-safe)
 builder.Services.AddSingleton<IElasticClient>(new ElasticClient(elasticSettings));
 
-// Register Elasticsearch service as scoped (better for controllers)
-builder.Services.AddSingleton<IElasticsearchService, ElasticsearchService>();
-
-// Register the initializer as a hosted service
-builder.Services.AddHostedService<ElasticsearchInitializerService>();
+// Register Elasticsearch service as scoped
+builder.Services.AddScoped<IElasticsearchService, ElasticsearchService>();
 
 // ------------------------
 // 7) Swagger
@@ -96,12 +86,12 @@ builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo
     {
-        Title = "Travel Booking API",
+        Title = "Travel Booking API with Elasticsearch",
         Version = "v1",
-        Description = "API for managing travel bookings, hotels, and flights with Elasticsearch integration"
+        Description = "Simple API for travel bookings with Elasticsearch search"
     });
 
-    // Add XML comments if you have them
+    // Add XML comments if available
     var xmlFile = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
     var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
     if (File.Exists(xmlPath))
@@ -176,9 +166,10 @@ app.UseExceptionHandler(handler =>
 
 // ---------- Endpoints ----------
 app.MapControllers();
+
+// ---------- Health checks ----------
 app.MapGet("/health", () => Results.Ok(new { Status = "Healthy", Timestamp = DateTime.UtcNow }));
 
-// ---------- Elasticsearch health check ----------
 app.MapGet("/health/elasticsearch", async (IElasticClient elasticClient) =>
 {
     try
@@ -201,5 +192,30 @@ app.MapGet("/health/elasticsearch", async (IElasticClient elasticClient) =>
         });
     }
 });
+
+// Initialize Elasticsearch indices on startup
+using (var scope = app.Services.CreateScope())
+{
+    var elasticService = scope.ServiceProvider.GetRequiredService<IElasticsearchService>();
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+
+    try
+    {
+        logger.LogInformation("Initializing Elasticsearch indices...");
+        var result = await elasticService.CreateIndicesAsync();
+        if (result)
+        {
+            logger.LogInformation("Elasticsearch indices initialized successfully");
+        }
+        else
+        {
+            logger.LogWarning("Failed to initialize Elasticsearch indices");
+        }
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "Error initializing Elasticsearch indices on startup");
+    }
+}
 
 app.Run();
